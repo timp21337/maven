@@ -193,9 +193,13 @@ if $cygwin; then
     CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
 fi
 
+. "$M2_HOME/bin/mvn-common.sh"
+export MAVEN_PROJECTBASEDIR=${MAVEN_BASEDIR:-$(find_maven_basedir)}
+MAVEN_OPTS="$(concat_lines "$MAVEN_PROJECTBASEDIR/.mvn/jvm.config") $MAVEN_OPTS"
+
 # Provide a "standardized" way to retrieve the CLI args that will 
 # work with both Windows and non-Windows executions.
-MAVEN_CMD_LINE_ARGS="$@"
+MAVEN_CMD_LINE_ARGS="$MAVEN_CONFIG $@"
 export MAVEN_CMD_LINE_ARGS
 
 exec "$JAVACMD" \
@@ -203,5 +207,5 @@ exec "$JAVACMD" \
   $MAVEN_DEBUG_OPTS \
   -classpath "${M2_HOME}"/boot/plexus-classworlds-*.jar \
   "-Dclassworlds.conf=${M2_HOME}/bin/m2.conf" \
-  "-Dmaven.home=${M2_HOME}"  \
+  "-Dmaven.home=${M2_HOME}" "-Dmaven.projectBasedir=${MAVEN_PROJECTBASEDIR}" \
   ${CLASSWORLDS_LAUNCHER} "$@"

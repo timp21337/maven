@@ -19,12 +19,16 @@ package org.apache.maven.cli;
  * under the License.
  */
 
+import java.io.BufferedReader;
 import java.io.Console;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +108,8 @@ public class MavenCli
     public static final String LOCAL_REPO_PROPERTY = "maven.repo.local";
 
     public static final String THREADS_DEPRECATED = "maven.threads.experimental";
+
+    public static final String PROJECT_BASEDIR = "maven.projectBasedir";
 
     @SuppressWarnings( "checkstyle:constantname" )
     public static final String userHome = System.getProperty( "user.home" );
@@ -275,7 +281,7 @@ public class MavenCli
         }
     }
 
-    private void cli( CliRequest cliRequest )
+    void cli( CliRequest cliRequest )
         throws Exception
     {
         //
@@ -286,9 +292,50 @@ public class MavenCli
 
         CLIManager cliManager = new CLIManager();
 
+        List<String> args = new ArrayList<String>();
+
         try
         {
-            cliRequest.commandLine = cliManager.parse( cliRequest.args );
+            String basedir = System.getProperty( PROJECT_BASEDIR );
+            File configFile =
+                basedir != null ? new File( basedir, ".mvn/maven.config" ) : new File( ".mvn/maven.config" );
+
+            if ( configFile.isFile() )
+            {
+                BufferedReader r =
+                    new BufferedReader( new InputStreamReader( new FileInputStream( configFile ), "UTF-8" ) );
+                try
+                {
+                    String str;
+                    while ( ( str = r.readLine() ) != null )
+                    {
+                        args.add( str );
+                    }
+                }
+                finally
+                {
+                    r.close();
+                }
+
+                CommandLine config = cliManager.parse( args.toArray( new String[args.size()] ) );
+                List<?> unrecongized = config.getArgList();
+                if ( !unrecongized.isEmpty() )
+                {
+                    throw new ParseException( "Unrecognized maven.config entries: " + unrecongized );
+                }
+            }
+        }
+        catch ( ParseException e )
+        {
+            System.err.println( "Unable to parse maven.config: " + e.getMessage() );
+            cliManager.displayHelp( System.out );
+            throw e;
+        }
+
+        try
+        {
+            args.addAll( 0, Arrays.asList( cliRequest.args ) );
+            cliRequest.commandLine = cliManager.parse( args.toArray( new String[args.size()] ) );
         }
         catch ( ParseException e )
         {

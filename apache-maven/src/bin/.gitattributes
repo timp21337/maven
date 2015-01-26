@@ -1,3 +1,4 @@
 mvn                eol=lf crlf=input
 mvnDebug           eol=lf crlf=input
 mvnyjp             eol=lf crlf=input
+mvn-common.sh      eol=lf crlf=input

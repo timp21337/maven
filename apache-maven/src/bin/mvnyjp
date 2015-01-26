@@ -34,14 +34,6 @@
 #   MAVEN_SKIP_RC - flag to disable loading of mavenrc files
 # ----------------------------------------------------------------------------
 
-QUOTED_ARGS=""
-while [ "$1" != "" ] ; do
-
-  QUOTED_ARGS="$QUOTED_ARGS \"$1\""
-  shift
-
-done
-
 if [ -z "$MAVEN_SKIP_RC" ] ; then
 
   if [ -f /etc/mavenrc ] ; then
@@ -204,11 +196,18 @@ fi
 
 MAVEN_OPTS="-agentpath:$YJPLIB=onexit=snapshot,onexit=memory,tracing,onlylocal $MAVEN_OPTS"
 
+. "$M2_HOME/bin/mvn-common.sh"
+export MAVEN_PROJECTBASEDIR=${MAVEN_BASEDIR:-$(find_maven_basedir)}
+MAVEN_OPTS="$(concat_lines "$MAVEN_PROJECTBASEDIR/.mvn/jvm.config") $MAVEN_OPTS"
+
+# Provide a "standardized" way to retrieve the CLI args that will 
+# work with both Windows and non-Windows executions.
+MAVEN_CMD_LINE_ARGS="$MAVEN_CONFIG $@"
+export MAVEN_CMD_LINE_ARGS
+
 exec "$JAVACMD" \
   $MAVEN_OPTS \
   -classpath "${M2_HOME}"/boot/plexus-classworlds-*.jar \
   "-Dclassworlds.conf=${M2_HOME}/bin/m2.conf" \
-  "-Dmaven.home=${M2_HOME}"  \
-  ${CLASSWORLDS_LAUNCHER} $QUOTED_ARGS
-
-
+  "-Dmaven.home=${M2_HOME}" "-Dmaven.projectBasedir=${MAVEN_PROJECTBASEDIR}" \
+  ${CLASSWORLDS_LAUNCHER} "$@"

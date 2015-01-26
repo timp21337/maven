@@ -74,6 +74,7 @@ under the License.
       <outputDirectory>bin</outputDirectory>
       <includes>
         <include>m2</include>
+        <include>mvn-common.sh</include>
         <include>mvn</include>
         <include>mvnDebug</include>
         <!-- This is so that CI systems can periodically run the profiler -->
