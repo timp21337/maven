@@ -34,15 +34,15 @@ public class ComparableVersionTest
 {
     private Comparable newComparable( String version )
     {
-        ComparableVersion ret = new ComparableVersion( version );
-        String canonical = ret.getCanonical();
+        ComparableVersion cv = new ComparableVersion( version );
+        String canonical = cv.getCanonical();
         String parsedCanonical = new ComparableVersion( canonical ).getCanonical();
 
         System.out.println( "canonical( " + version + " ) = " + canonical );
         assertEquals( "canonical( " + version + " ) = " + canonical + " -> canonical: " + parsedCanonical, canonical,
                       parsedCanonical );
 
-        return ret;
+        return cv;
     }
 
     private static final String[] VERSIONS_QUALIFIER =
@@ -85,7 +85,7 @@ public class ComparableVersionTest
         assertTrue( "expected " + v2 + ".equals( " + v1 + " )", c2.equals( c1 ) );
     }
 
-    private void checkVersionsOrder( String v1, String v2 )
+    private void checkLessThan( String v1, String v2 )
     {
         Comparable c1 = newComparable( v1 );
         Comparable c2 = newComparable( v2 );
@@ -154,33 +154,68 @@ public class ComparableVersionTest
 
     public void testVersionComparing()
     {
-        checkVersionsOrder( "1", "2" );
-        checkVersionsOrder( "1.5", "2" );
-        checkVersionsOrder( "1", "2.5" );
-        checkVersionsOrder( "1.0", "1.1" );
-        checkVersionsOrder( "1.1", "1.2" );
-        checkVersionsOrder( "1.0.0", "1.1" );
-        checkVersionsOrder( "1.0.1", "1.1" );
-        checkVersionsOrder( "1.1", "1.2.0" );
+        checkLessThan( "1", "2" );
+        checkLessThan( "1.5", "2" );
+        checkLessThan( "1", "2.5" );
+        checkLessThan( "1.0", "1.1" );
+        checkLessThan( "1.1", "1.2" );
+        checkLessThan( "1.0.0", "1.1" );
+        checkLessThan( "1.0.1", "1.1" );
+        checkLessThan( "1.1", "1.2.0" );
 
-        checkVersionsOrder( "1.0-alpha-1", "1.0" );
-        checkVersionsOrder( "1.0-alpha-1", "1.0-alpha-2" );
-        checkVersionsOrder( "1.0-alpha-1", "1.0-beta-1" );
+        checkLessThan( "1.0-alpha-1", "1.0" );
+        checkLessThan( "1.0-alpha-1", "1.0-alpha-2" );
+        checkLessThan( "1.0-alpha-1", "1.0-beta-1" );
 
-        checkVersionsOrder( "1.0-beta-1", "1.0-SNAPSHOT" );
-        checkVersionsOrder( "1.0-SNAPSHOT", "1.0" );
-        checkVersionsOrder( "1.0-alpha-1-SNAPSHOT", "1.0-alpha-1" );
+        checkLessThan( "1.0-beta-1", "1.0-SNAPSHOT" );
+        checkLessThan( "1.0-SNAPSHOT", "1.0" );
+        checkLessThan( "1.0-alpha-1-SNAPSHOT", "1.0-alpha-1" );
 
-        checkVersionsOrder( "1.0", "1.0-1" );
-        checkVersionsOrder( "1.0-1", "1.0-2" );
-        checkVersionsOrder( "1.0.0", "1.0-1" );
 
-        checkVersionsOrder( "2.0-1", "2.0.1" );
-        checkVersionsOrder( "2.0.1-klm", "2.0.1-lmn" );
-        checkVersionsOrder( "2.0.1", "2.0.1-xyz" );
+        checkLessThan( "1.0", "1.0-1" );
+        checkLessThan( "1.0-1", "1.0-2" );
+        checkLessThan( "1.0.0", "1.0-1" );
 
-        checkVersionsOrder( "2.0.1", "2.0.1-123" );
-        checkVersionsOrder( "2.0.1-xyz", "2.0.1-123" );
+        checkLessThan( "2.0-1", "2.0.1" );
+        checkLessThan( "2.0.1-klm", "2.0.1-lmn" );
+        checkLessThan( "2.0.1", "2.0.1-xyz" );
+
+        checkLessThan( "2.0.1", "2.0.1-123" );
+        checkLessThan( "2.0.1-xyz", "2.0.1-123" );
+
+        // New SNAPSHOT beats old published
+        // develop/master CI scenario
+        // Developer updates local repo, prior to commit
+        checkLessThan( "1.2-345", "1.3-SNAPSHOT" );
+        // Developer PR accepted into develop branch
+        checkLessThan( "1.2-345", "1.3.1-SNAPSHOT" );
+        checkLessThan( "1.3-SNAPSHOT", "1.3.1-SNAPSHOT" );
+        // Develop branch merged to master
+        checkLessThan( "1.3.1-SNAPSHOT", "1.3.1" );
+        // Hotfix branch build
+        checkLessThan( "1.3.1", "1.3.1.1-SNAPSHOT" );
+
+        // master only CI scenario
+        // Developer updates local repo, prior to commit
+        checkLessThan( "1.2-345", "1.2-345-SNAPSHOT" );
+        // Developer PR accepted into master branch
+        checkLessThan( "1.2-345", "1.3.346" );
+        checkLessThan( "1.3-SNAPSHOT", "1.3.1-SNAPSHOT" );
+        // Develop branch merged to master
+        checkLessThan( "1.3.1-SNAPSHOT", "1.3.1" );
+        // Hotfix branch build
+        checkLessThan( "1.3.1", "1.3.1.1-SNAPSHOT" );
+
+
+
+
+        // Published beats old SNAPSHOT
+        checkLessThan( "1.2-SNAPSHOT", "1.2.345" );
+        checkLessThan( "1.2-SNAPSHOT", "1.2-345" );
+        checkLessThan( "1.2.345-SNAPSHOT", "1.2.345" );
+        checkLessThan( "1.2-345-SNAPSHOT", "1.2-345" );
+        checkLessThan( "1.2-SNAPSHOT", "1.2-45" );
+
     }
 
     /**
@@ -196,9 +231,9 @@ public class ComparableVersionTest
         String b = "6.1.0rc3";
         String c = "6.1H.5-beta"; // this is the unusual version string, with 'H' in the middle
 
-        checkVersionsOrder( b, a ); // classical
-        checkVersionsOrder( b, c ); // now b < c, but before MNG-5568, we had b > c
-        checkVersionsOrder( a, c );
+        checkLessThan( b, a ); // classical
+        checkLessThan( b, c ); // now b < c, but before MNG-5568, we had b > c
+        checkLessThan( a, c );
     }
 
     public void testLocaleIndependent()
